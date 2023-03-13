@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cash exchange</title>
+    <style>
+      .header {
+        text-align: center;
+        text-decoration: underline;
+        padding: 5px;
+        font-size: 20px;
+      }
+      .wrapper {
+        display: flex;
+      }
+      .search-input {
+        order: 1;
+      }
+
+      .search-input2 {
+        order: 3;
+      }
+      .order1 {
+        order: 1 !important;
+      }
+      .order3 {
+        order: 3 !important;
+      }
+      input {
+        order: 2;
+        margin: 0 10px;
+      }
+      .toggle {
+        order: 4;
+      }
+      .output {
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        width: 100px;
+        padding: 0 50px;
+        order: 5;
+        display: inline-block;
+        color: crimson;
+        font-size: bold;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid__item {
+        display: flex;
+        justify-content: space-between;
+        border: 1px solid black;
+        margin: 5px;
+        padding: 10px;
+      }
+      .search-input {
+        position: relative;
+      }
+      .search-input .autocomplete {
+        position: absolute;
+        top: 25px;
+        left: 10px;
+
+        opacity: 0;
+        pointer-events: none;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: rgb(255, 255, 255, 0.9);
+        border: 1px solid #000000;
+      }
+      .search-input.active .autocomplete {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .search-input.active .autocomplete li {
+        margin-bottom: 3px;
+        display: block;
+        padding: 5px 55px;
+      }
+      .autocomplete li:hover {
+        background: #5948f3;
+      }
+      .search-input2 {
+        position: relative;
+      }
+      .search-input2 .autocomplete {
+        position: absolute;
+        top: 25px;
+        left: 10px;
+
+        opacity: 0;
+        pointer-events: none;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: rgb(255, 255, 255, 0.9);
+        border: 1px solid #000000;
+      }
+      .search-input2.active .autocomplete {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .search-input2.active .autocomplete li {
+        margin-bottom: 3px;
+        display: block;
+        padding: 5px 55px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header"></div>
+    <div class="wrapper">
+      <div class="search-input">
+        <input type="text" class="currency1" />
+      </div>
+      <input type="number" class="input" />
+      <div class="search-input2">
+        <input type="text" class="currency2" />
+      </div>
+      <input type="button" value="Toggle currency" class="toggle" />
+      <div class="output"></div>
+    </div>
+
+    <div class="grid"></div>
+
+    <script>
+      const header = document.querySelector(".header");
+      const grid = document.querySelector(".grid");
+      const currency1 = document.querySelector(".currency1");
+      const currency2 = document.querySelector(".currency2");
+      const input = document.querySelector(".input");
+      const output = document.querySelector(".output");
+      const toggle = document.querySelector(".toggle");
+
+      const searchDiv = document.querySelector(".search-input");
+      const searchDiv2 = document.querySelector(".search-input2");
+
+      let chosenCurrency1;
+      let chosenCurrency2;
+      let data;
+      let dataList;
+
+      fetch("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json")
+        .then((response) => response.json())
+        .then((json) => (data = json));
+
+      setTimeout(function () {
+        header.innerHTML = data[0].exchangedate;
+        data.forEach((element) => {
+          grid.insertAdjacentHTML(
+            "beforeend",
+            `<div class="grid__item">
+                  <div class="grid__cc">${element.cc}</div>
+                  <div class="grid__txt">${element.txt}</div>
+                  <div class="grid__rate">${element.rate}</div>
+                </div>`
+          );
+          let option = document.createElement("option");
+          option.innerHTML = element.cc;
+          currency1.appendChild(option);
+        });
+        //New array with cc values
+        dataList = new Array();
+        data.forEach((element) => {
+          if (element.hasOwnProperty("cc")) {
+            dataList.push(element.cc);
+          }
+        });
+      }, 300);
+
+      input.addEventListener("input", () => {
+        getResult();
+      });
+
+      toggle.addEventListener("click", () => {
+        searchDiv.classList.toggle("order3");
+        searchDiv2.classList.toggle("order1");
+        getResult();
+      });
+
+      function getResult() {
+        if (
+          chosenCurrency1 &&
+          chosenCurrency2 &&
+          !searchDiv.classList.contains("order3")
+        ) {
+          let result = (chosenCurrency1 / chosenCurrency2) * input.value;
+          output.innerHTML = result.toFixed(2);
+        } else if (
+          chosenCurrency1 &&
+          chosenCurrency2 &&
+          searchDiv.classList.contains("order3")
+        ) {
+          let result = (chosenCurrency2 / chosenCurrency1) * input.value;
+          output.innerHTML = result.toFixed(2);
+        }
+      }
+
+      //Create event listener on first input. Filter Datalist array and create new arr that match values in dataList
+      currency1.addEventListener("keyup", filterArr);
+      currency2.addEventListener("keyup", filterArr);
+      //create div with autocomplete values
+      currency1.addEventListener("click", () => {
+        autocompleteList = document.createElement("DIV");
+        autocompleteList.setAttribute("class", "autocomplete");
+        currency1.parentNode.appendChild(autocompleteList);
+      });
+      currency2.addEventListener("click", () => {
+        autocompleteList = document.createElement("DIV");
+        autocompleteList.setAttribute("class", "autocomplete");
+        currency2.parentNode.appendChild(autocompleteList);
+      });
+
+      function filterArr(e) {
+        // variable of input value for both currency element
+        inputValue = this.value;
+        if (inputValue) {
+          this.parentElement.classList.add("active");
+          let filteredArr = dataList.filter(function (word) {
+            return word.toUpperCase().includes(inputValue.toUpperCase());
+          });
+          suggestionGenerator(filteredArr);
+        } else {
+          this.parentElement.classList.remove("active");
+        }
+      }
+
+      // Change the suggestion arr by creating li items with input which are matched
+      function suggestionGenerator(wordArray) {
+        let suggestionWord = wordArray
+          .map(function (word) {
+            return "<li>" + word + "</li>";
+          })
+          .join("");
+
+        if (suggestionWord) {
+          autocompleteList.innerHTML = suggestionWord;
+        } else {
+          autocompleteList.innerHTML = "<li>" + inputValue.value + "</li>";
+        }
+        Select();
+      }
+      function Select() {
+        let allAutocompleteItems = autocompleteList.querySelectorAll("li");
+        if (searchDiv.classList.contains("active")) {
+          allAutocompleteItems.forEach(function (wordItem) {
+            wordItem.addEventListener("click", function (e) {
+              currency1.value = e.target.textContent;
+              searchDiv.classList.remove("active");
+              data.forEach((element) => {
+                if (element.cc === currency1.value) {
+                  chosenCurrency1 = element.rate;
+                }
+              });
+            });
+          });
+        } else if (searchDiv2.classList.contains("active")) {
+          allAutocompleteItems.forEach(function (wordItem) {
+            wordItem.addEventListener("click", function (e) {
+              currency2.value = e.target.textContent;
+              searchDiv2.classList.remove("active");
+              data.forEach((element) => {
+                if (element.cc === currency2.value) {
+                  chosenCurrency2 = element.rate;
+                }
+              });
+            });
+          });
+        }
+      }
+
+      //Notation
+      // only letters in input field: if(input.value.match(/[A-Z]/))
+      // to uppercase let inputValue = currency1.value.toUpperCase();
+      // filter method: const filterData = data.filter(function (e) {
+      //   return e.cc == inputValue;
+      // });
+      // console.log(filterData);
+      // Regex check
+      // currency1.addEventListener("keyup", (e) => {
+      //   let text = e.target.value;
+      //   let regex = new RegExp(text, "gi");
+      //   dataList.filter(function (c) {
+      //     return c.match(regex);
+      //   });
+      // });
+    </script>
+  </body>
+</html>
